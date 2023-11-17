@@ -89,14 +89,17 @@ query {
                 'maxResults': 500
             },
         }
-        r = requests.post(domain + '/.api/graphql', json=graphql)
+        r = requests.post(f'{domain}/.api/graphql', json=graphql)
         repos.extend(x['name'] for x in r.json()['data']['repositories']
                      if repo_filter in x['name'])
     elif r.startswith('github.com/') and r.count('/') == 1:
         org = r[len('github.com/'):]
-        for d in requests.get('https://api.github.com/orgs/' + org +
-                              '/repos').json():
-            repos.append('github.com/' + d['full_name'])
+        repos.extend(
+            'github.com/' + d['full_name']
+            for d in requests.get(
+                f'https://api.github.com/orgs/{org}/repos'
+            ).json()
+        )
     else:
         repos.append(r)
 
@@ -154,12 +157,12 @@ for pattern in [args.pattern] + args.patterns:
         import json
         print(json.dumps(graphql))
         sys.stderr.write(
-            '### Tip: curl {}/.api/graphql --compressed --data @graphql.json\n'.
-            format(domain))
+            f'### Tip: curl {domain}/.api/graphql --compressed --data @graphql.json\n'
+        )
         exit(0)
 
     start = time.time()
-    r = requests.post(domain + '/.api/graphql', json=graphql)
+    r = requests.post(f'{domain}/.api/graphql', json=graphql)
     duration = time.time() - start
     if args.debug and 'X-Trace' in r.headers:
         sys.stderr.write('X-Trace: ' + r.headers['X-Trace'] + '\n')
@@ -184,8 +187,7 @@ for pattern in [args.pattern] + args.patterns:
                                            lm['lineNumber'] + 1,
                                            lm['offsetAndLengths'][0][0] +
                                            lm['offsetAndLengths'][0][1] + 1)
-                print('%s/%s/-/blob/%s#%s %s' % (domain, repo, path, lrange,
-                                                 lm['preview']))
+                print(f"{domain}/{repo}/-/blob/{path}#{lrange} {lm['preview']}")
             else:
                 print('%s/%s:%d:%s' % (repo, path, lm['lineNumber'],
                                        lm['preview']))
